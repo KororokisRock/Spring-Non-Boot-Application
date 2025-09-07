@@ -4,7 +4,7 @@ info:
   description: API для системы управления картами и пользователями с JWT аутентификацией.
   version: 1.0.0
 servers:
-  - url: http://localhost:8080/effmob
+  - url: http://localhost:8080/spring-project
     description: Local server
 tags:
   - name: Authentication
