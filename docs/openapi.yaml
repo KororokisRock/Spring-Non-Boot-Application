@@ -1,0 +1,788 @@
+openapi: 3.0.3
+info:
+  title: Card Management System API
+  description: API для системы управления картами и пользователями с JWT аутентификацией.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/effmob
+    description: Local server
+tags:
+  - name: Authentication
+    description: Операции для аутентификации и получения токенов
+  - name: Registration
+    description: Операции для регистрации новых пользователей
+  - name: Users
+    description: Операции для управления пользователями (требуются права ADMIN)
+  - name: Cards
+    description: Операции для управления картами
+  - name: Transfers
+    description: Операции для перевода средств между картами
+paths:
+  /auth/sing-in:
+    post:
+      tags:
+        - Authentication
+      summary: Аутентификация пользователя
+      description: Возвращает JWT и refresh токены для аутентифицированного пользователя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCredentialsDTO'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtAuthenticationDTO'
+        '400':
+          description: Неверные учетные данные или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Ошибка аутентификации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Обновление JWT токена
+      description: Обновляет access token используя валидный refresh token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDTO'
+      responses:
+        '200':
+          description: Успешное обновление токена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtAuthenticationDTO'
+        '400':
+          description: Невалидный refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /register:
+    post:
+      tags:
+        - Registration
+      summary: Регистрация нового пользователя
+      description: Создает нового пользователя с ролью ROLE_USER.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationDTO'
+      responses:
+        '200':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Registration complete"
+        '400':
+          description: Ошибка валидации, пароли не совпадают или пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /user/all:
+    get:
+      tags:
+        - Users
+      summary: Получить всех пользователей
+      description: Возвращает список всех зарегистрированных пользователей. Требует аутентификации.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDTO'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /user/delete:
+    post:
+      tags:
+        - Users
+      summary: Удалить пользователя (ADMIN)
+      description: Удаляет пользователя по его username. Требует роли ADMIN.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameDTO'
+      responses:
+        '200':
+          description: Пользователь успешно удален
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "User delete successfully"
+        '400':
+          description: Пользователь не найден или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/all:
+    get:
+      tags:
+        - Cards
+      summary: Получить все карты (ADMIN)
+      description: Возвращает список всех карт с пагинацией и фильтрацией. Требует роли ADMIN. Параметры передаются в теле запроса.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterPageCardDTO'
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_CardDTO_'
+        '400':
+          description: Ошибка валидации параметров фильтрации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/add:
+    post:
+      tags:
+        - Cards
+      summary: Добавить новую карту (ADMIN)
+      description: Создает новую карту для указанного пользователя. Требует роли ADMIN.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCardDTO'
+      responses:
+        '200':
+          description: Карта успешно добавлена
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Card added"
+        '400':
+          description: Ошибка валидации, карта с таким номером уже существует или пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/block:
+    post:
+      tags:
+        - Cards
+      summary: Заблокировать карту (ADMIN)
+      description: Блокирует указанную карту. Требует роли ADMIN.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardNumberDTO'
+      responses:
+        '200':
+          description: Карта успешно заблокирована
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Card blocked"
+        '400':
+          description: Карта не найдена, уже заблокирована или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/activate:
+    post:
+      tags:
+        - Cards
+      summary: Активировать карту (ADMIN)
+      description: Активирует указанную карту. Требует роли ADMIN.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardNumberDTO'
+      responses:
+        '200':
+          description: Карта успешно активирована
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Card activated"
+        '400':
+          description: Карта не найдена, уже активна или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/delete:
+    post:
+      tags:
+        - Cards
+      summary: Удалить карту (ADMIN)
+      description: Удаляет указанную карту. Требует роли ADMIN.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardNumberDTO'
+      responses:
+        '200':
+          description: Карта успешно удалена
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Card deleted"
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '403':
+          description: Недостаточно прав (требуется роль ADMIN)
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/show:
+    post:
+      tags:
+        - Cards
+      summary: Получить карты пользователя (маскированные)
+      description: Возвращает список карт текущего аутентифицированного пользователя с маскированными номерами. Параметры пагинации и фильтрации передаются в теле.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterPageCardDTO'
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_CardDTO_'
+        '400':
+          description: Ошибка валидации параметров фильтрации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/show-full-number:
+    post:
+      tags:
+        - Cards
+      summary: Получить карты пользователя (полные номера)
+      description: Возвращает список карт текущего аутентифицированного пользователя с полными номерами. Параметры пагинации и фильтрации передаются в теле.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FilterPageCardDTO'
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse_CardDTO_'
+        '400':
+          description: Ошибка валидации параметров фильтрации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /card/transfer:
+    post:
+      tags:
+        - Transfers
+        - Cards
+      summary: Перевод между картами
+      description: Выполняет перевод средств между двумя картами текущего пользователя.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferBetweenCardsDTO'
+      responses:
+        '200':
+          description: Перевод успешно выполнен
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Transfer between cards completed successfully"
+        '400':
+          description: Карта не найдена, недостаточно средств, карта принадлежит другому пользователю или ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Токен не предоставлен или невалиден
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserCredentialsDTO:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+          minLength: 2
+          maxLength: 50
+          example: "user123"
+        password:
+          type: string
+          description: Пароль
+          minLength: 3
+          example: "pass123"
+    JwtAuthenticationDTO:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          description: Refresh token для получения нового access token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    RefreshTokenDTO:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    RegistrationDTO:
+      type: object
+      required:
+        - username
+        - password
+        - passwordConfirm
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+          minLength: 2
+          maxLength: 50
+          example: "newuser"
+        password:
+          type: string
+          description: Пароль
+          minLength: 3
+          example: "newpass123"
+        passwordConfirm:
+          type: string
+          description: Подтверждение пароля
+          example: "newpass123"
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: ID пользователя
+          example: 1
+        username:
+          type: string
+          description: Имя пользователя
+          example: "user123"
+        role:
+          type: string
+          description: Роль пользователя
+          example: "ROLE_USER"
+    UsernameDTO:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+          minLength: 2
+          maxLength: 50
+          example: "user123"
+    CardNumberDTO:
+      type: object
+      required:
+        - cardNumber
+      properties:
+        cardNumber:
+          type: string
+          description: Номер карты (16 цифр)
+          pattern: "^[0-9]{16}$"
+          example: "1234567812345678"
+    NewCardDTO:
+      type: object
+      required:
+        - cardNumber
+        - ownerId
+        - validityPeriod
+      properties:
+        cardNumber:
+          type: string
+          description: Номер карты (16 цифр)
+          pattern: "^[0-9]{16}$"
+          example: "1234567812345678"
+        ownerId:
+          type: integer
+          format: int32
+          description: ID владельца карты
+          example: 1
+        validityPeriod:
+          type: string
+          format: date
+          description: Срок действия карты (должен быть будущей датой)
+          example: "2025-12-31"
+    FilterPageCardDTO:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Фильтр по имени пользователя (частичное совпадение)
+          nullable: true
+          example: "user"
+        directionSort:
+          type: string
+          description: Направление сортировки (asc/desc)
+          default: "asc"
+          enum: [asc, desc]
+        sortBy:
+          type: string
+          description: Поле для сортировки
+          default: "id"
+          enum: [id, card_number, owner_id, validity_period, status, balance]
+        page:
+          type: integer
+          format: int32
+          description: Номер страницы (начинается с 0)
+          default: 0
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          description: Размер страницы
+          default: 10
+          minimum: 1
+        cardNumber:
+          type: string
+          description: Фильтр по номеру карты (частичное совпадение)
+          nullable: true
+          example: "1234"
+        minEndDate:
+          type: string
+          format: date
+          description: Минимальная дата срока действия
+          nullable: true
+          example: "2024-01-01"
+        maxEndDate:
+          type: string
+          format: date
+          description: Максимальная дата срока действия
+          nullable: true
+          example: "2024-12-31"
+        status:
+          type: string
+          description: Фильтр по статусу карты
+          nullable: true
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+        minBalance:
+          type: number
+          format: double
+          description: Минимальный баланс карты
+          nullable: true
+          default: -1.7976931348623157E+308
+        maxBalance:
+          type: number
+          format: double
+          description: Максимальный баланс карты
+          nullable: true
+          default: 1.7976931348623157E+308
+    CardDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: ID карты
+          example: 1
+        cardNumber:
+          type: string
+          description: Номер карты (может быть маскирован)
+          example: "************5678"
+        ownerId:
+          type: integer
+          format: int32
+          description: ID владельца карты
+          example: 1
+        validityPeriod:
+          type: string
+          format: date
+          description: Срок действия карты
+          example: "2024-12-31"
+        status:
+          type: string
+          description: Статус карты
+          enum: [ACTIVE, BLOCKED, EXPIRED]
+          example: "ACTIVE"
+        balance:
+          type: number
+          format: double
+          description: Баланс карты
+          example: 100.5
+    TransferBetweenCardsDTO:
+      type: object
+      required:
+        - firstCardNumber
+        - secondCardNumber
+        - amountTransferBetweenCards
+      properties:
+        firstCardNumber:
+          type: string
+          description: Номер карты списания (16 цифр)
+          pattern: "^[0-9]{16}$"
+          example: "1234567812345678"
+        secondCardNumber:
+          type: string
+          description: Номер карты зачисления (16 цифр)
+          pattern: "^[0-9]{16}$"
+          example: "8765432187654321"
+        amountTransferBetweenCards:
+          type: number
+          format: double
+          description: Сумма перевода (должна быть положительной)
+          minimum: 0
+          exclusiveMinimum: true
+          example: 50.0
+    PaginatedResponse_CardDTO_:
+      type: object
+      properties:
+        content:
+          type: array
+          description: Список карт на текущей странице
+          items:
+            $ref: '#/components/schemas/CardDTO'
+        currentPage:
+          type: integer
+          format: int32
+          description: Текущая страница
+          example: 0
+        totalPages:
+          type: integer
+          format: int32
+          description: Общее количество страниц
+          example: 5
+        totalItems:
+          type: integer
+          format: int64
+          description: Общее количество элементов
+          example: 42
+        pageSize:
+          type: integer
+          format: int32
+          description: Размер страницы
+          example: 10
+        hasNext:
+          type: boolean
+          description: Есть ли следующая страница
+          example: true
+        hasPrevious:
+          type: boolean
+          description: Есть ли предыдущая страница
+          example: false
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Сообщение об ошибке
+          example: "User not found"
+        className:
+          type: string
+          description: Класс исключения
+          example: "class com.app.exception.UserNotFoundException"
+    ValidationErrorResponse:
+      type: object
+      properties:
+        ValidationErrors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Маппинг поле -> сообщение об ошибке валидации
+          example: {"username": "Username is required", "cardNumber": "Card number must be exactly 16 digits"}
+        ErrorCode:
+          type: string
+          description: Код ошибки
+          example: "APP_ERROR"
+        Error:
+          type: string
+          description: Общее сообщение об ошибке
+          example: "Validation error."

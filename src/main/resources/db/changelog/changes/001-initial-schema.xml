@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+    
+    <changeSet id="001-create-users-table" author="developer">
+        <comment>Create users table</comment>
+        
+        <createTable tableName="users">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+        
+        <addUniqueConstraint 
+            tableName="users" 
+            columnNames="username"
+            constraintName="uk_users_username"/>
+    </changeSet>
+    
+    <changeSet id="002-create-cards-table" author="developer">
+        <comment>Create cards table with foreign key to users</comment>
+        
+        <createTable tableName="cards">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="card_number" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="owner_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validity_period" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance" type="DOUBLE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        
+        <addUniqueConstraint 
+            tableName="cards" 
+            columnNames="card_number"
+            constraintName="uk_cards_card_number"/>
+            
+        <addForeignKeyConstraint 
+            baseTableName="cards" 
+            baseColumnNames="owner_id" 
+            referencedTableName="users" 
+            referencedColumnNames="id"
+            constraintName="fk_cards_owner_id"
+            onDelete="CASCADE"
+            onUpdate="CASCADE"/>
+    </changeSet>
+    
+    <changeSet id="003-add-enum-constraint-cards-status" author="developer">
+        <comment>Add check constraint for status enum in cards table</comment>
+        
+        <sql>
+            ALTER TABLE cards 
+            MODIFY status ENUM('ACTIVE', 'BLOCKED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE';
+        </sql>
+    </changeSet>
+    
+</databaseChangeLog>

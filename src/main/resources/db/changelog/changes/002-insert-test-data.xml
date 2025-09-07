@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
+    
+    <changeSet id="002-insert-test-users" author="developer">
+        <comment>Insert test users data</comment>
+        
+        <insert tableName="users">
+            <column name="id" value="1"/>
+            <column name="role" value="ROLE_ADMIN"/>
+            <column name="password" value="$2a$12$23I9mthxDuHstih7Vkc7CuUIF3D45UgwKGtKWUCC3osmY046FJ5zy"/>
+            <column name="username" value="Kororok"/>
+        </insert>
+
+        <insert tableName="users">
+            <column name="role" value="ROLE_USER"/>
+            <column name="password" value="$2a$12$c4fr7smmnmrzlvs8FhIoNu8mhkKtcC.IJpFJ.fjONWVM8sLpP/R2K"/>
+            <column name="username" value="max"/>
+        </insert>
+        
+    </changeSet>
+    
+    <changeSet id="002-insert-test-cards" author="developer">
+        <comment>Insert test cards data</comment>
+        
+        <insert tableName="cards">
+            <column name="id" value="1"/>
+            <column name="card_number" value="1234123412341234"/>
+            <column name="owner_id" value="1"/>
+            <column name="validity_period" valueDate="2027-02-01"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="balance" value="2000.0"/>
+        </insert>
+
+        <insert tableName="cards">
+            <column name="card_number" value="9876987698769876"/>
+            <column name="owner_id" value="2"/>
+            <column name="validity_period" valueDate="2028-12-31"/>
+            <column name="status" value="ACTIVE"/>
+            <column name="balance" value="1000.0"/>
+        </insert>
+        
+    </changeSet>
+    
+</databaseChangeLog>

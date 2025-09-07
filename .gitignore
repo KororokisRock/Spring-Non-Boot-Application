@@ -1,0 +1,5 @@
+.vscode
+catalina.base_IS_UNDEFINED
+*.sh
+*.properties
+target/
